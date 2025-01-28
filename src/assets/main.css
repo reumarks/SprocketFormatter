@@ -7,14 +7,6 @@
   font-weight: normal;
 }
 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
-}
-
 @media (hover: hover) {
   a:hover {
     background-color: hsla(160, 100%, 37%, 0.2);
@@ -31,4 +23,98 @@ a,
     display: flex;
     padding: 0 2rem;
   }
+}
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background-color: #282828;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(123, 34, 175, 0.1);
+  border-radius: 4px;
+}
+
+.title {
+  user-select: none;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0;
+  padding-right: 1rem;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.button-bar {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.button {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+  user-select: none;
+}
+
+.blue-button {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.blue-button:hover {
+  background-color: #0056b3;
+}
+
+.green-button {
+  background-color: #28a745;
+  color: #fff;
+}
+
+.green-button:hover {
+  background-color: #1e7e34;
+}
+
+.red-button {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+.red-button:hover {
+  background-color: #b21f2d;
+}
+
+.icon-button {
+  padding: 0px;
+  padding-top: 5px;
+  height: 100%;
+  aspect-ratio: 1.2;
+}
+
+.text-input {
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 150px;
 }

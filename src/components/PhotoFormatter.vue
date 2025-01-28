@@ -4,30 +4,26 @@
       <h1 class="title">Sprocket Formatter</h1>
       <div class="button-bar">
         <input type="file" accept="image/*" multiple @change="handleFileUpload" class="hidden" id="file-input" />
-        <label for="file-input" class="button upload-button">Upload Photos</label>
-        <button @click="downloadAll" class="button download-button">Download All</button>
+        <label for="file-input" class="button blue-button">Upload Photos</label>
+        <button @click="downloadAll" class="button green-button">Download All</button>
       </div>
     </header>
 
-    <div v-if="images.length > 0" class="photo-grid-container">
-      <div class="photo-grid">
-        <div v-for="(image, index) in images" :key="index" class="photo-item" @click="selectImage(index)">
-          <img :src="image.borderedImage" alt="Processed Image" class="photo" />
-        </div>
-      </div>
-    </div>
+    <PhotoGrid :photoGridData="photoData" @select-image="selectImage" />
 
-    <div class="image-overlay" :class="{ 'hidden': selectedImageIndex == null || !isImageLoaded }">
+    <div class="image-overlay" :class="{ 'hidden': currentPhotoData == null }">
       <div class="image-viewer">
         <canvas ref="editCanvas" class="edit-canvas"></canvas>
-        <div class="bottom-bar">
-          <input type="text" placeholder="Filename" class="text-input" v-model="name" @input="renderCanvas" />
-          <input type="text" placeholder="Date" class="text-input" v-model="date" @input="renderCanvas" />
-          <button class="button rotate-button" @click="toggleOrientation">
-            <IconRotate></IconRotate>
+        <div v-if="currentPhotoData !== null" class="bottom-bar">
+          <input type="text" placeholder="Filename" class="text-input" v-model="currentPhotoData.name"
+            @input="renderCanvas" />
+          <input type="text" placeholder="Date" class="text-input" v-model="currentPhotoData.date"
+            @input="renderCanvas" />
+          <button class="button icon-button blue-button" @click="toggleOrientation">
+            <IconRotate />
           </button>
-          <button class="button close-button" @click="closeImage">
-            <IconCheck></IconCheck>
+          <button class="button icon-button green-button" @click="closeImage">
+            <IconCheck />
           </button>
         </div>
       </div>
@@ -40,30 +36,20 @@ import { defineComponent } from 'vue';
 import IconRotate from './icons/IconRotate.vue';
 import IconCheck from './icons/IconCheck.vue';
 
-interface photoData {
-  borderedImage: string,
-  originalImage: string;
-  name: string;
-  offsetX: number;
-  offsetY: number;
-  isPortrait: boolean;
-  date: string;
-}
+import type { photoData } from './PhotoGrid.vue';
+import PhotoGrid from './PhotoGrid.vue';
 
 export default defineComponent({
   data() {
     return {
-      images: [] as photoData[],
-      selectedImageIndex: null as number | null,
-      isImageLoaded: false,
-      isPortrait: true,
-      sourceOffsetX: 0,
-      sourceOffsetY: 0,
-      name: '',
-      date: '',
+      photoData: [] as photoData[],
+      currentPhotoData: null as photoData | null,
+      canvas: null as HTMLCanvasElement | null,
+      context: null as CanvasRenderingContext2D | null,
     };
   },
   components: {
+    PhotoGrid,
     IconRotate,
     IconCheck,
   },
@@ -73,90 +59,55 @@ export default defineComponent({
       const files = target.files;
       if (!files || files.length === 0) return;
 
-      this.images = [];
+      this.photoData = [];
 
-      const addBorder = (imageFile: File): Promise<photoData> => {
+      const addBorder = (imageFile: File): Promise<photoData | null> => {
         return new Promise((resolve) => {
           const reader = new FileReader();
+          const currentImageData: photoData = {
+            borderedImage: '',
+            image: new Image(),
+            name: 'unknown',
+            offsetX: 0,
+            offsetY: 0,
+            date: '00/00/25',
+            isPortrait: false
+          };
           reader.onload = (e: ProgressEvent<FileReader>) => {
-            const img = new Image();
-            img.onload = () => {
-              const canvas = document.createElement('canvas');
-              const context = canvas.getContext('2d');
-
-              if (!context) {
-                console.error('Failed to get canvas context');
-                resolve({
-                  borderedImage: '',
-                  originalImage: '',
-                  name: 'unknown',
-                  offsetX: 0,
-                  offsetY: 0,
-                  date: '0/0/0000',
-                  isPortrait: false
-                });
+            currentImageData.image.onload = () => {
+              if (!this.canvas) {
+                resolve(null);
                 return;
               }
 
-              const borderSize = 94;
-              const isPortrait = img.height > img.width;
-              const canvasWidth = isPortrait ? 1070 : 1627;
-              const canvasHeight = isPortrait ? 1627 : 1070;
+              currentImageData.isPortrait = currentImageData.image.height > currentImageData.image.width;
+              this.canvas.width = currentImageData.isPortrait ? 1070 : 1627;
+              this.canvas.height = currentImageData.isPortrait ? 1627 : 1070;
 
-              canvas.width = canvasWidth;
-              canvas.height = canvasHeight;
+              let sourceHeight = currentImageData.image.height;
+              let sourceWidth = currentImageData.image.width;
 
-              let sourceOffsetX = 0;
-              let sourceOffsetY = 0;
-              let sourceHeight = img.height;
-              let sourceWidth = img.width;
+              const imageWidth = this.canvas.width - 188;
+              const imageHeight = this.canvas.height - 188;
 
-              const imageWidth = canvasWidth - borderSize * 2;
-              const imageHeight = canvasHeight - borderSize * 2;
-
-              if (isPortrait) {
+              if (currentImageData.isPortrait) {
                 sourceWidth = (sourceHeight * imageWidth) / imageHeight;
-                sourceOffsetX = (img.width - sourceWidth) / 2;
+                currentImageData.offsetY = 0;
+                currentImageData.offsetX = (currentImageData.image.width - sourceWidth) / 2;
               } else {
                 sourceHeight = (sourceWidth * imageHeight) / imageWidth;
-                sourceOffsetY = (img.height - sourceHeight) / 2;
+                currentImageData.offsetX = 0;
+                currentImageData.offsetY = (currentImageData.image.height - (sourceHeight)) / 2;
               }
 
-              context.fillStyle = 'white';
-              context.fillRect(0, 0, canvasWidth, canvasHeight);
-              context.drawImage(
-                img,
-                sourceOffsetX,
-                sourceOffsetY,
-                sourceWidth,
-                sourceHeight,
-                borderSize,
-                borderSize,
-                imageWidth,
-                imageHeight
-              );
+              this.renderImage(currentImageData);
 
-              context.fillStyle = "black";
-              context.font = "55px Arial";
-              context.textAlign = "left";
-              context.fillText('file_name.jpeg', 95, canvasHeight - 27);
-              context.textAlign = "right";
-              context.fillText('00/00/25', canvasWidth - 95, canvasHeight - 27);
-              context.font = "80px Arial";
-              context.fillText('...', canvasWidth - 95, 70);
+              currentImageData.borderedImage = this.canvas.toDataURL('image/png');
 
-              resolve({
-                borderedImage: canvas.toDataURL('image/png'),
-                originalImage: '',
-                name: 'file_name',
-                offsetX: sourceOffsetX,
-                offsetY: sourceOffsetY,
-                date: '00/00/25',
-                isPortrait: isPortrait
-              });
+              resolve(currentImageData);
             };
             if (e.target?.result) {
-              img.src = e.target.result as string;
+              currentImageData.image.src = e.target.result as string;
             }
           };
           reader.readAsDataURL(imageFile);
@@ -167,8 +118,7 @@ export default defineComponent({
         try {
           const borderedImageData = await addBorder(file);
           if (borderedImageData) {
-            borderedImageData.originalImage = URL.createObjectURL(file);
-            this.images.push(borderedImageData);
+            this.photoData.push(borderedImageData);
           }
         } catch (error) {
           console.error('Error processing image:', error);
@@ -176,8 +126,60 @@ export default defineComponent({
       }
     },
 
+    renderImage(currentImageData: photoData) {
+      if (!this.canvas || !currentImageData) {
+        console.error('Failed to get canvas');
+        return;
+      }
+
+      const borderSize = 94;
+      this.canvas.width = currentImageData.isPortrait ? 1070 : 1627;
+      this.canvas.height = currentImageData.isPortrait ? 1627 : 1070;
+
+      let sourceHeight = currentImageData.image.height;
+      let sourceWidth = currentImageData.image.width;
+
+      const imageWidth = this.canvas.width - borderSize * 2;
+      const imageHeight = this.canvas.height - borderSize * 2;
+
+      if (currentImageData.isPortrait) {
+        sourceWidth = (sourceHeight * imageWidth) / imageHeight;
+      } else {
+        sourceHeight = (sourceWidth * imageHeight) / imageWidth;
+      }
+
+      if (!this.context) {
+        console.error('Failed to get context');
+        return;
+      }
+
+      this.context.fillStyle = 'white';
+      this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+      this.context.drawImage(
+        currentImageData.image,
+        currentImageData.offsetX,
+        currentImageData.offsetY,
+        sourceWidth,
+        sourceHeight,
+        borderSize,
+        borderSize,
+        imageWidth,
+        imageHeight
+      );
+
+      this.context.fillStyle = "black";
+      this.context.font = "55px Arial";
+      this.context.textAlign = "left";
+      this.context.fillText(`${currentImageData.name}.jpeg`, 95, this.canvas.height - 27);
+      this.context.textAlign = "right";
+      this.context.fillText(`${currentImageData.date}`, this.canvas.width - 95, this.canvas.height - 27);
+      this.context.font = "80px Arial";
+      this.context.fillText('...', this.canvas.width - 95, 70);
+    },
+
     downloadAll(): void {
-      this.images.forEach((image, index) => {
+      this.photoData.forEach((image, index) => {
         const link = document.createElement('a');
         link.href = image.borderedImage;
         link.download = `bordered-image-${index + 1}.png`;
@@ -185,128 +187,78 @@ export default defineComponent({
       });
     },
     selectImage(index: number): void {
-      this.isImageLoaded = false;
-      this.selectedImageIndex = index;
-
-      this.isPortrait = this.images[this.selectedImageIndex].isPortrait;
-      this.sourceOffsetX = this.images[this.selectedImageIndex].offsetX;
-      this.sourceOffsetY = this.images[this.selectedImageIndex].offsetY;
-      this.name = this.images[this.selectedImageIndex].name;
-      this.date = this.images[this.selectedImageIndex].date;
-
+      this.currentPhotoData = this.photoData[index];
       this.renderCanvas();
     },
     closeImage(): void {
-      if (this.selectedImageIndex !== null) {
-        const canvas = this.$refs.editCanvas as HTMLCanvasElement;
-        this.images[this.selectedImageIndex].borderedImage = canvas.toDataURL('image/png');
-        this.images[this.selectedImageIndex].offsetX = this.sourceOffsetX;
-        this.images[this.selectedImageIndex].offsetY = this.sourceOffsetY;
-        this.images[this.selectedImageIndex].isPortrait = this.isPortrait;
-        this.images[this.selectedImageIndex].name = this.name;
-        this.images[this.selectedImageIndex].date = this.date;
+      if (this.currentPhotoData !== null && this.canvas !== null) {
+        this.currentPhotoData.borderedImage = this.canvas.toDataURL('image/png');
       }
-      this.selectedImageIndex = null;
+      this.currentPhotoData = null;
     },
     toggleOrientation(): void {
-      this.isPortrait = !this.isPortrait;
+      if (!this.currentPhotoData) return;
+      this.currentPhotoData.isPortrait = !this.currentPhotoData.isPortrait;
       this.renderCanvas();
     },
     renderCanvas(): void {
-      if (this.selectedImageIndex === null) return;
+      if (this.currentPhotoData === null || this.canvas === null) return;
 
-      const canvas = this.$refs.editCanvas as HTMLCanvasElement;
-      const context = canvas.getContext('2d');
+      this.canvas.width = this.currentPhotoData.isPortrait ? 1070 : 1627;
+      this.canvas.height = this.currentPhotoData.isPortrait ? 1627 : 1070;
 
-      if (!context) {
-        console.error('Failed to get canvas context');
-        return;
+      let sourceHeight = this.currentPhotoData.image.height;
+      let sourceWidth = this.currentPhotoData.image.width;
+
+      const imageWidth = this.canvas.width - 188;
+      const imageHeight = this.canvas.height - 188;
+
+      if (this.currentPhotoData.isPortrait) {
+        sourceWidth = (sourceHeight * imageWidth) / imageHeight;
+      } else {
+        sourceHeight = (sourceWidth * imageHeight) / imageWidth;
       }
 
-      const img = new Image();
-      img.onload = () => {
-        const borderSize = 94;
-        const canvasWidth = this.isPortrait ? 1070 : 1627;
-        const canvasHeight = this.isPortrait ? 1627 : 1070;
+      this.currentPhotoData.offsetX = this.currentPhotoData.offsetX < 0 ? 0 : this.currentPhotoData.offsetX;
+      this.currentPhotoData.offsetY = this.currentPhotoData.offsetY < 0 ? 0 : this.currentPhotoData.offsetY;
+      this.currentPhotoData.offsetX = this.currentPhotoData.offsetX > this.currentPhotoData.image.width - sourceWidth ?
+        this.currentPhotoData.image.width - sourceWidth : this.currentPhotoData.offsetX;
+      this.currentPhotoData.offsetY = this.currentPhotoData.offsetY > this.currentPhotoData.image.height - sourceHeight ?
+        this.currentPhotoData.image.height - sourceHeight : this.currentPhotoData.offsetY;
 
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
-
-        const imageWidth = canvasWidth - borderSize * 2;
-        const imageHeight = canvasHeight - borderSize * 2;
-
-        let sourceWidth = img.width;
-        let sourceHeight = img.height;
-
-        if (this.isPortrait) {
-          sourceWidth = (sourceHeight * imageWidth) / imageHeight;
-        } else {
-          sourceHeight = (sourceWidth * imageHeight) / imageWidth;
-        }
-
-        this.sourceOffsetX = this.sourceOffsetX < 0 ? 0 : this.sourceOffsetX;
-        this.sourceOffsetY = this.sourceOffsetY < 0 ? 0 : this.sourceOffsetY;
-        this.sourceOffsetX = this.sourceOffsetX > img.width - sourceWidth ? img.width - sourceWidth : this.sourceOffsetX;
-        this.sourceOffsetY = this.sourceOffsetY > img.height - sourceHeight ? img.height - sourceHeight : this.sourceOffsetY;
-
-        context.fillStyle = 'white';
-        context.fillRect(0, 0, canvasWidth, canvasHeight);
-        context.drawImage(
-          img,
-          this.sourceOffsetX,
-          this.sourceOffsetY,
-          sourceWidth,
-          sourceHeight,
-          borderSize,
-          borderSize,
-          imageWidth,
-          imageHeight
-        );
-
-        this.name = this.name.replace(' ', '_');
-        context.fillStyle = "black";
-        context.font = "55px Arial";
-        context.textAlign = "left";
-        context.fillText(this.name + '.jpeg', 95, canvasHeight - 27);
-        context.textAlign = "right";
-        context.fillText(this.date, canvasWidth - 95, canvasHeight - 27);
-        context.font = "80px Arial";
-        context.fillText('...', canvasWidth - 95, 70);
-
-        this.isImageLoaded = true;
-      };
-
-      img.src = this.images[this.selectedImageIndex].originalImage;
+      this.renderImage(this.currentPhotoData);
     },
   },
   mounted() {
-    const canvas = this.$refs.editCanvas as HTMLCanvasElement;
+    this.canvas = this.$refs.editCanvas as HTMLCanvasElement;
+    this.context = this.canvas.getContext('2d');
+
     let isDragging = false;
     let startX = 0;
     let startY = 0;
 
-    canvas.addEventListener('mousedown', (e) => {
+    this.canvas.addEventListener('mousedown', (e) => {
       isDragging = true;
       startX = e.offsetX;
       startY = e.offsetY;
     });
 
-    canvas.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
+    this.canvas.addEventListener('mousemove', (e) => {
+      if (!isDragging || !this.currentPhotoData) return;
       const dx = e.offsetX - startX;
       const dy = e.offsetY - startY;
-      this.sourceOffsetX -= dx * 2;
-      this.sourceOffsetY -= dy * 2;
+      this.currentPhotoData.offsetX -= dx * 2;
+      this.currentPhotoData.offsetY -= dy * 2;
       startX = e.offsetX;
       startY = e.offsetY;
       this.renderCanvas();
     });
 
-    canvas.addEventListener('mouseup', () => {
+    this.canvas.addEventListener('mouseup', () => {
       isDragging = false;
     });
 
-    canvas.addEventListener('mouseleave', () => {
+    this.canvas.addEventListener('mouseleave', () => {
       isDragging = false;
     });
   },
@@ -314,76 +266,6 @@ export default defineComponent({
 </script>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-}
-
-.container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1rem;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  background-color: #282828;
-  padding: 1rem;
-  box-shadow: 0 2px 4px rgba(123, 34, 175, 0.1);
-  border-radius: 4px;
-}
-
-.title {
-  user-select: none;
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin: 0;
-  padding-right: 1rem;
-}
-
-.hidden {
-  display: none !important;
-}
-
-.button-bar {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.button {
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
-  font-weight: bold;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  text-align: center;
-  user-select: none;
-}
-
-.upload-button {
-  background-color: #007bff;
-  color: #fff;
-}
-
-.upload-button:hover {
-  background-color: #0056b3;
-}
-
-.download-button {
-  background-color: #28a745;
-  color: #fff;
-}
-
-.download-button:hover {
-  background-color: #1e7e34;
-}
-
 .photo-grid-container {
   width: 100%;
   max-height: 85vh;
@@ -454,48 +336,5 @@ body {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-}
-
-.text-input {
-  padding: 0.5rem;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  width: 150px;
-}
-
-.rotate-button {
-  background-color: #515151;
-  color: #ffffff;
-  padding: 0px;
-  padding-top: 5px;
-  height: 100%;
-  aspect-ratio: 1.2;
-}
-
-.rotate-button:hover {
-  background-color: #3b3b3b;
-}
-
-.close-button {
-  background-color: #007bff;
-  color: #ffffff;
-  padding: 0px;
-  padding-top: 5px;
-  height: 100%;
-  aspect-ratio: 1.2;
-}
-
-.close-button:hover {
-  background-color: #0056b3;
-}
-
-.delete-button {
-  background-color: #dc3545;
-  color: #fff;
-}
-
-.delete-button:hover {
-  background-color: #b21f2d;
 }
 </style>
