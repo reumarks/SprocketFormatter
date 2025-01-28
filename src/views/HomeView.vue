@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import TheWelcome from '../components/TheWelcome.vue'
+import PhotoFormatter from '../components/PhotoFormatter.vue';
 </script>
 
 <template>
   <main>
-    <TheWelcome />
+    <PhotoFormatter />
   </main>
 </template>
