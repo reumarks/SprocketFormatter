@@ -9,12 +9,15 @@
       </div>
     </header>
 
-    <PhotoGrid :photoGridData="photoData" @select-image="selectImage" />
+    <PhotoGrid :photoGridData="photoData" :class="{ 'photo-grid-lock': photosLoading == true }"
+      @select-image="selectImage" />
 
     <div class="image-overlay" :class="{ 'hidden': currentPhotoData == null }">
       <div class="image-viewer">
         <div class="canvas-wrapper">
           <canvas ref="editCanvas" class="edit-canvas"></canvas>
+          <input v-if="currentPhotoData !== null" type="range" min="1" max="5" step="0.01" value="1"
+            class="vertical zoom-slider" orient="vertical" v-model="currentPhotoData.scale">
         </div>
         <div v-if="currentPhotoData !== null" class="bottom-bar">
           <div class="button-group">
@@ -60,6 +63,7 @@ interface photoData {
   sourceW: number;
   sourceH: number;
   isPortrait: boolean;
+  scale: number;
 }
 
 export default defineComponent({
@@ -77,6 +81,7 @@ export default defineComponent({
       pmouseY: 0,
       isCanvasActive: false,
       sprocketFont: null as FontFace | null,
+      photosLoading: false,
     };
   },
   components: {
@@ -101,6 +106,7 @@ export default defineComponent({
       const target = event.target as HTMLInputElement;
       const files = target.files;
       if (!files || files.length === 0) return;
+      this.photosLoading = true;
 
       const addBorder = (imageFile: File): Promise<photoData | null> => {
         return new Promise((resolve) => {
@@ -113,6 +119,7 @@ export default defineComponent({
             offsetY: 0,
             sourceH: 0,
             sourceW: 0,
+            scale: 1,
             date: new Date(imageFile.lastModified),
             isPortrait: false,
           };
@@ -167,6 +174,7 @@ export default defineComponent({
         }
       }
       this.photoData = this.photoData.sort((a, b) => a.date.getTime() - b.date.getTime());
+      this.photosLoading = false;
     },
 
     renderImage(currentImageData: photoData) {
@@ -180,11 +188,6 @@ export default defineComponent({
       const imageWidth = this.canvas.width - borderSize * 2;
       const imageHeight = this.canvas.height - borderSize * 2;
 
-      const sourceHeight = currentImageData.isPortrait ?
-        currentImageData.image.height : currentImageData.image.width * imageHeight / imageWidth;
-      const sourceWidth = currentImageData.isPortrait ?
-        currentImageData.image.height * imageWidth / imageHeight : currentImageData.image.width;
-
       if (!this.context) {
         console.error('Failed to get context');
         return;
@@ -197,8 +200,8 @@ export default defineComponent({
         currentImageData.image,
         currentImageData.offsetX,
         currentImageData.offsetY,
-        sourceWidth,
-        sourceHeight,
+        currentImageData.sourceW,
+        currentImageData.sourceH,
         borderSize,
         borderSize,
         imageWidth,
@@ -226,6 +229,7 @@ export default defineComponent({
       });
     },
     selectImage(index: number): void {
+      if (this.photosLoading === true) return;
       this.currentPhotoIndex = index;
       this.currentPhotoData = this.photoData[this.currentPhotoIndex];
 
@@ -284,12 +288,23 @@ export default defineComponent({
       }
 
       if (this.mouseIsPressed) {
-        this.currentPhotoData.offsetX += (this.pmouseX - this.mouseX) * 2;
-        this.currentPhotoData.offsetY += (this.pmouseY - this.mouseY) * 2;
+        this.currentPhotoData.offsetX += (this.pmouseX - this.mouseX) * 2 / Math.sqrt(this.currentPhotoData.scale);
+        this.currentPhotoData.offsetY += (this.pmouseY - this.mouseY) * 2 / Math.sqrt(this.currentPhotoData.scale);
       }
 
       this.pmouseY = this.mouseY;
       this.pmouseX = this.mouseX;
+
+      const imageWidth = this.canvas.width - 188;
+      const imageHeight = this.canvas.height - 188;
+
+      if (this.currentPhotoData.isPortrait) {
+        this.currentPhotoData.sourceH = this.currentPhotoData.image.height / Math.sqrt(this.currentPhotoData.scale);
+        this.currentPhotoData.sourceW = (this.currentPhotoData.image.height * imageWidth) / imageHeight / Math.sqrt(this.currentPhotoData.scale);
+      } else {
+        this.currentPhotoData.sourceW = this.currentPhotoData.image.width / Math.sqrt(this.currentPhotoData.scale);
+        this.currentPhotoData.sourceH = (this.currentPhotoData.image.width * imageHeight) / imageWidth / Math.sqrt(this.currentPhotoData.scale);
+      }
 
       this.currentPhotoData.offsetX = this.constrain(
         this.currentPhotoData.offsetX,
@@ -376,6 +391,10 @@ export default defineComponent({
 </script>
 
 <style>
+.photo-grid-lock :hover {
+  cursor: wait !important;
+}
+
 .image-overlay {
   position: fixed;
   top: 0;
@@ -398,6 +417,8 @@ export default defineComponent({
   max-height: 90%;
   justify-content: center;
   gap: 0.5rem;
+  align-content: center;
+  flex-wrap: wrap;
 }
 
 .canvas-wrapper {
@@ -416,6 +437,12 @@ export default defineComponent({
 
 .edit-canvas:hover {
   cursor: move;
+}
+
+.zoom-slider {
+  -webkit-appearance: slider-vertical;
+  writing-mode: bt-lr;
+  width: 30px;
 }
 
 .bottom-bar {
