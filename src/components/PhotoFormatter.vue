@@ -382,6 +382,7 @@ export default defineComponent({
   align-items: center;
   max-width: 90%;
   max-height: 90%;
+  justify-content: center;
 }
 
 .edit-canvas {
@@ -389,8 +390,7 @@ export default defineComponent({
   border-radius: 2px;
   background-color: #fff;
   max-width: min(600px, 100%);
-  max-height: 600px;
-  height: 80%;
+  max-height: min(600px, 80%);
   margin-bottom: 1rem;
 }
 
