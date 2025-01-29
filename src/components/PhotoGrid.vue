@@ -3,7 +3,11 @@
     <div class="photo-grid">
       <div v-for="(image, index) in photoGridData" :key="index" class="photo-item"
         @click="$emit('select-image', index)">
-        <img :src="image.borderedImage" alt="Processed Image" class="photo" />
+        <div class="photo-wrapper">
+          <img :src="image.borderedImage" alt="Processed Image" class="photo">
+          <div class="bottom-left circle" v-if="image.name === ''">
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -11,24 +15,10 @@
 
 <script lang="ts">
 
-export interface photoData {
-  borderedImage: string,
-  image: HTMLImageElement;
-  name: string;
-  offsetX: number;
-  offsetY: number;
-  isPortrait: boolean;
-  date: string;
-}
-
 export default {
   emits: ['select-image'],
   props: ['photoGridData'],
-  data(photoGridData: photoData[]) {
-    console.log(photoGridData);
-  },
 };
-
 </script>
 
 <style scoped>
@@ -44,22 +34,39 @@ export default {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  gap: 10px;
 }
 
 .photo-item {
   display: flex;
-  max-width: 40%;
-  aspect-ratio: 1;
   justify-content: center;
   align-items: center;
+  position: relative;
+}
+
+.photo-wrapper {
+  display: flex;
+  position: relative;
+  max-width: fit-content;
+  max-height: fit-content;
 }
 
 .photo {
-  display: flex;
-  max-width: 90%;
-  max-height: 90%;
-  height: auto;
-  width: auto;
-  border-radius: 4px;
+  border-radius: 2px;
+  max-height: 3.4in;
+  max-width: 3.4in;
+}
+
+.bottom-left {
+  position: absolute;
+  bottom: 3px;
+  left: 3px;
+}
+
+.circle {
+  background-color: rgb(224, 61, 107);
+  width: 15px;
+  height: 15px;
+  border-radius: 100%;
 }
 </style>
