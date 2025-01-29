@@ -77,10 +77,10 @@ export default defineComponent({
       canvas: null as HTMLCanvasElement | null,
       context: null as CanvasRenderingContext2D | null,
       mouseIsPressed: false,
-      mouseX: 0,
-      mouseY: 0,
-      pmouseX: 0,
-      pmouseY: 0,
+      mouseX: 0 as number | null,
+      mouseY: 0 as number | null,
+      pmouseX: 0 as number | null,
+      pmouseY: 0 as number | null,
       isCanvasActive: false,
       sprocketFont: null as FontFace | null,
       photosLoading: false,
@@ -292,8 +292,13 @@ export default defineComponent({
       }
 
       if (this.mouseIsPressed) {
-        this.currentPhotoData.offsetX += (this.pmouseX - this.mouseX) * 2 / Math.sqrt(this.currentPhotoData.scale);
-        this.currentPhotoData.offsetY += (this.pmouseY - this.mouseY) * 2 / Math.sqrt(this.currentPhotoData.scale);
+        if (this.mouseX && this.pmouseX && this.mouseY && this.pmouseY) {
+          this.currentPhotoData.offsetX += (this.pmouseX - this.mouseX) * 2 / Math.sqrt(this.currentPhotoData.scale);
+          this.currentPhotoData.offsetY += (this.pmouseY - this.mouseY) * 2 / Math.sqrt(this.currentPhotoData.scale);
+        }
+      } else {
+        this.mouseX = null;
+        this.mouseY = null;
       }
 
       this.pmouseY = this.mouseY;
