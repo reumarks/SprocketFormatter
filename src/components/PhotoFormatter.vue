@@ -22,11 +22,14 @@
             <VueDatePicker v-model="currentPhotoData.date" :enable-time-picker="false" :format="format" auto-apply
               style="max-width: 140px;">
             </VueDatePicker>
-            <button class="button icon-button blue-button" style="width: 50px;" @click="toggleOrientation">
-              <IconRotate />
-            </button>
           </div>
           <div class="button-group">
+            <button class="button icon-button red-button" style="width: 50px;" @click="deleteImage">
+              <IconTrash />
+            </button>
+            <button class="button icon-button blue-button" @click="toggleOrientation">
+              <IconRotate />
+            </button>
             <button class="button icon-button green-button" @click="closeImage">
               <IconCheck />
             </button>
@@ -39,6 +42,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
+import IconTrash from './icons/IconTrash.vue';
 import IconRotate from './icons/IconRotate.vue';
 import IconCheck from './icons/IconCheck.vue';
 import PhotoGrid from './PhotoGrid.vue';
@@ -62,6 +66,7 @@ export default defineComponent({
   data() {
     return {
       photoData: [] as photoData[],
+      currentPhotoIndex: null as number | null,
       currentPhotoData: null as photoData | null,
       canvas: null as HTMLCanvasElement | null,
       context: null as CanvasRenderingContext2D | null,
@@ -78,6 +83,7 @@ export default defineComponent({
     PhotoGrid,
     IconRotate,
     IconCheck,
+    IconTrash,
     VueDatePicker,
   },
   methods: {
@@ -95,8 +101,6 @@ export default defineComponent({
       const target = event.target as HTMLInputElement;
       const files = target.files;
       if (!files || files.length === 0) return;
-
-      this.photoData = [];
 
       const addBorder = (imageFile: File): Promise<photoData | null> => {
         return new Promise((resolve) => {
@@ -222,7 +226,8 @@ export default defineComponent({
       });
     },
     selectImage(index: number): void {
-      this.currentPhotoData = this.photoData[index];
+      this.currentPhotoIndex = index;
+      this.currentPhotoData = this.photoData[this.currentPhotoIndex];
 
       if (!this.canvas) return;
 
@@ -240,6 +245,13 @@ export default defineComponent({
       }
       this.photoData = this.photoData.sort((a, b) => a.date.getTime() - b.date.getTime());
       this.currentPhotoData = null;
+      this.currentPhotoIndex = null;
+    },
+    deleteImage(): void {
+      if (this.currentPhotoIndex === null) return;
+      this.photoData.splice(this.currentPhotoIndex, 1);
+      this.currentPhotoData = null;
+      this.currentPhotoIndex = null;
     },
     toggleOrientation(): void {
       if (!this.currentPhotoData || !this.canvas) return;
