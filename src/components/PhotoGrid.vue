@@ -25,7 +25,7 @@ export default {
 .photo-grid-container {
   width: 100%;
   max-height: 100%;
-  overflow-y: scroll;
+  overflow-y: auto;
   padding: 1rem;
   padding-bottom: 10rem;
   user-select: none;
