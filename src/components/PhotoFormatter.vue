@@ -14,10 +14,12 @@
 
     <div class="image-overlay" :class="{ 'hidden': currentPhotoData == null }">
       <div class="image-viewer">
+        <input v-if="currentPhotoData !== null && !currentPhotoData.isPortrait" type="range" min="1" max="5" step="0.01"
+          value="1" style="width: min(100%, 600px)" v-model="currentPhotoData.scale">
         <div class="canvas-wrapper">
           <canvas ref="editCanvas" class="edit-canvas"></canvas>
-          <input v-if="currentPhotoData !== null" type="range" min="1" max="5" step="0.01" value="1"
-            class="vertical zoom-slider" orient="vertical" v-model="currentPhotoData.scale">
+          <input v-if="currentPhotoData !== null && currentPhotoData.isPortrait" type="range" min="1" max="5"
+            step="0.01" value="1" class="vertical zoom-slider" orient="vertical" v-model="currentPhotoData.scale">
         </div>
         <div v-if="currentPhotoData !== null" class="bottom-bar">
           <div class="button-group">
@@ -278,6 +280,8 @@ export default defineComponent({
         this.currentPhotoData.offsetX = 0;
         this.currentPhotoData.offsetY = (this.currentPhotoData.image.height - (this.currentPhotoData.sourceH)) / 2;
       }
+
+      this.currentPhotoData.scale = 1;
     },
     updateCanvas(): void {
       if (this.canvas === null) return;
@@ -370,8 +374,8 @@ export default defineComponent({
 
       const touch = e.touches[0];
 
-      this.mouseX = (touch.clientX - boundingRect.left) * scale;
-      this.mouseY = (touch.clientY - boundingRect.top) * scale;
+      this.mouseX = (touch.screenX - boundingRect.left) * scale;
+      this.mouseY = (touch.screenY - boundingRect.top) * scale;
     });
 
     this.canvas.addEventListener('mouseup', () => {
@@ -451,7 +455,7 @@ export default defineComponent({
   flex-direction: row;
   flex-wrap: wrap;
   justify-content: center;
-  width: fit-content;
+  width: min(100%, 600px)
 }
 
 .floating-date {
