@@ -160,6 +160,7 @@ export default defineComponent({
           console.error('Error processing image:', error);
         }
       }
+      this.photoData = this.photoData.sort((a, b) => a.date.getTime() - b.date.getTime());
     },
 
     renderImage(currentImageData: photoData) {
@@ -235,6 +236,7 @@ export default defineComponent({
       if (this.currentPhotoData !== null && this.canvas !== null) {
         this.currentPhotoData.borderedImage = this.canvas.toDataURL('image/png');
       }
+      this.photoData = this.photoData.sort((a, b) => a.date.getTime() - b.date.getTime());
       this.currentPhotoData = null;
     },
     toggleOrientation(): void {
@@ -317,6 +319,10 @@ export default defineComponent({
       this.mouseIsPressed = true;
     });
 
+    this.canvas.addEventListener('touchstart', () => {
+      this.mouseIsPressed = true;
+    });
+
     this.canvas.addEventListener('mousemove', (e) => {
       if (!this.currentPhotoData || !this.canvas) return;
 
@@ -326,13 +332,31 @@ export default defineComponent({
       this.mouseY = (e.clientY - boundingRect.top) * scale;
     });
 
+    this.canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (!this.currentPhotoData || !this.canvas) return;
+
+      const boundingRect = this.canvas.getBoundingClientRect();
+      const scale = this.canvas.width / boundingRect.width;
+
+      const touch = e.touches[0];
+
+      this.mouseX = (touch.clientX - boundingRect.left) * scale;
+      this.mouseY = (touch.clientY - boundingRect.top) * scale;
+    });
+
     this.canvas.addEventListener('mouseup', () => {
+      this.mouseIsPressed = false;
+    });
+
+    this.canvas.addEventListener('touchend', () => {
       this.mouseIsPressed = false;
     });
 
     this.canvas.addEventListener('mouseleave', () => {
       this.mouseIsPressed = false;
     });
+
   },
 });
 </script>
@@ -362,10 +386,11 @@ export default defineComponent({
 
 .edit-canvas {
   border: 1px solid #ccc;
-  border-radius: 4px;
+  border-radius: 2px;
   background-color: #fff;
-  max-width: min(100%, 800px);
-  max-height: min(80%, 800px);
+  max-width: min(600px, 100%);
+  max-height: 600px;
+  height: 80%;
   margin-bottom: 1rem;
 }
 

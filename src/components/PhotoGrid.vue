@@ -5,7 +5,7 @@
         @click="$emit('select-image', index)">
         <div class="photo-wrapper">
           <img :src="image.borderedImage" alt="Processed Image" class="photo">
-          <div class="bottom-left circle" v-if="image.name === ''">
+          <div class="top-left circle" v-if="image.name === ''">
           </div>
         </div>
       </div>
@@ -24,9 +24,10 @@ export default {
 <style scoped>
 .photo-grid-container {
   width: 100%;
-  max-height: 85vh;
-  overflow-y: auto;
+  max-height: 100%;
+  overflow-y: scroll;
   padding: 1rem;
+  padding-bottom: 10rem;
   user-select: none;
 }
 
@@ -34,7 +35,7 @@ export default {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
+  gap: 20px;
 }
 
 .photo-item {
@@ -47,8 +48,6 @@ export default {
 .photo-wrapper {
   display: flex;
   position: relative;
-  max-width: fit-content;
-  max-height: fit-content;
 }
 
 .photo {
@@ -57,16 +56,20 @@ export default {
   max-width: 3.4in;
 }
 
-.bottom-left {
+.photo-wrapper :hover {
+  cursor: pointer;
+}
+
+.top-left {
   position: absolute;
-  bottom: 3px;
-  left: 3px;
+  top: 4px;
+  left: 4px;
 }
 
 .circle {
   background-color: rgb(224, 61, 107);
-  width: 15px;
-  height: 15px;
+  width: 13px;
+  height: 13px;
   border-radius: 100%;
 }
 </style>
