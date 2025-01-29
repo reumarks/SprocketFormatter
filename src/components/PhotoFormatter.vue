@@ -13,7 +13,9 @@
 
     <div class="image-overlay" :class="{ 'hidden': currentPhotoData == null }">
       <div class="image-viewer">
-        <canvas ref="editCanvas" class="edit-canvas"></canvas>
+        <div class="canvas-wrapper">
+          <canvas ref="editCanvas" class="edit-canvas"></canvas>
+        </div>
         <div v-if="currentPhotoData !== null" class="bottom-bar">
           <div class="button-group">
             <input type="text" placeholder="photo_name" class="text-input" v-model="currentPhotoData.name" />
@@ -383,15 +385,21 @@ export default defineComponent({
   max-width: 90%;
   max-height: 90%;
   justify-content: center;
+  gap: 0.5rem;
+}
+
+.canvas-wrapper {
+  display: flex;
+  position: relative;
+  max-width: min(600px, 100%);
+  max-height: min(600px, 80%);
 }
 
 .edit-canvas {
-  border: 1px solid #ccc;
   border-radius: 2px;
   background-color: #fff;
-  max-width: min(600px, 100%);
-  max-height: min(600px, 80%);
-  margin-bottom: 1rem;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .edit-canvas:hover {
@@ -404,6 +412,14 @@ export default defineComponent({
   flex-direction: row;
   flex-wrap: wrap;
   justify-content: center;
-  width: 100%;
+  width: fit-content;
+}
+
+.floating-date {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  display: flex;
+  gap: 0.5rem;
 }
 </style>
