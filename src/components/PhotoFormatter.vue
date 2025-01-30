@@ -11,34 +11,34 @@
 
     <PhotoGrid :photoGridData="photoData" :class="{ 'photo-grid-lock': photosLoading == true }"
       @select-image="selectImage" />
+  </div>
 
-    <div class="image-overlay" :class="{ 'hidden': currentPhotoData == null }">
-      <div class="image-viewer">
-        <input v-if="currentPhotoData !== null && !currentPhotoData.isPortrait" type="range" min="1" max="5" step="0.01"
-          value="1" style="width: min(100%, 600px)" v-model="currentPhotoData.scale">
-        <div class="canvas-wrapper">
-          <canvas ref="editCanvas" class="edit-canvas"></canvas>
-          <input v-if="currentPhotoData !== null && currentPhotoData.isPortrait" type="range" min="1" max="5"
-            step="0.01" value="1" class="vertical zoom-slider" orient="vertical" v-model="currentPhotoData.scale">
+  <div class="image-overlay" :class="{ 'hidden': currentPhotoData == null }">
+    <div class="image-viewer">
+      <input v-if="currentPhotoData !== null && !currentPhotoData.isPortrait" type="range" min="1" max="5" step="0.01"
+        value="1" style="width: min(100%, 600px)" v-model="currentPhotoData.scale">
+      <div class="canvas-wrapper">
+        <canvas ref="editCanvas" class="edit-canvas"></canvas>
+        <input v-if="currentPhotoData !== null && currentPhotoData.isPortrait" type="range" min="1" max="5" step="0.01"
+          value="1" class="vertical zoom-slider" orient="vertical" v-model="currentPhotoData.scale">
+      </div>
+      <div v-if="currentPhotoData !== null" class="bottom-bar">
+        <div class="button-group">
+          <input type="text" placeholder="photo_name" class="text-input" v-model="currentPhotoData.name" />
+          <VueDatePicker v-model="currentPhotoData.date" :enable-time-picker="false" :format="format" auto-apply
+            style="max-width: 140px;">
+          </VueDatePicker>
         </div>
-        <div v-if="currentPhotoData !== null" class="bottom-bar">
-          <div class="button-group">
-            <input type="text" placeholder="photo_name" class="text-input" v-model="currentPhotoData.name" />
-            <VueDatePicker v-model="currentPhotoData.date" :enable-time-picker="false" :format="format" auto-apply
-              style="max-width: 140px;">
-            </VueDatePicker>
-          </div>
-          <div class="button-group">
-            <button class="button icon-button red-button" style="width: 50px;" @click="deleteImage">
-              <IconTrash />
-            </button>
-            <button class="button icon-button blue-button" @click="toggleOrientation">
-              <IconRotate />
-            </button>
-            <button class="button icon-button green-button" @click="closeImage">
-              <IconCheck />
-            </button>
-          </div>
+        <div class="button-group">
+          <button class="button icon-button red-button" style="width: 50px;" @click="deleteImage">
+            <IconTrash />
+          </button>
+          <button class="button icon-button blue-button" @click="toggleOrientation">
+            <IconRotate />
+          </button>
+          <button class="button icon-button green-button" @click="closeImage">
+            <IconCheck />
+          </button>
         </div>
       </div>
     </div>
@@ -408,9 +408,9 @@ export default defineComponent({
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -426,8 +426,6 @@ export default defineComponent({
   max-height: 90%;
   justify-content: center;
   gap: 0.5rem;
-  align-content: center;
-  flex-wrap: wrap;
 }
 
 .canvas-wrapper {
