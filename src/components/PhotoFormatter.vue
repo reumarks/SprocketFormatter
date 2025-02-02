@@ -102,7 +102,7 @@ export default defineComponent({
       const month = ("0" + (date.getMonth() + 1)).slice(-2)
       const year = ("" + date.getFullYear()).slice(-2)
 
-      return `${day}/${month}/${year}`;
+      return `${month}/${day}/${year}`;
     },
     async handleFileUpload(event: Event): Promise<void> {
       const target = event.target as HTMLInputElement;
