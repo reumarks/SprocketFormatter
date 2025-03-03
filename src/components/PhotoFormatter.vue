@@ -3,6 +3,8 @@
     <header class="header">
       <h1 class="title">Sprocket Formatter</h1>
       <div class="button-bar">
+        <input type="file" accept="json/*" @change="handleMetadataUpload" class="hidden" id="metadata-input" />
+        <label for="metadata-input" class="button blue-button">Upload Metadata</label>
         <input type="file" accept="image/*" multiple @change="handleFileUpload" class="hidden" id="file-input" />
         <label for="file-input" class="button blue-button">Upload Photos</label>
         <button @click="downloadAll" class="button green-button">Download All</button>
@@ -59,6 +61,7 @@ interface photoData {
   borderedImage: string,
   image: HTMLImageElement;
   name: string;
+  filename: string;
   date: Date;
   offsetX: number;
   offsetY: number;
@@ -104,11 +107,33 @@ export default defineComponent({
 
       return `${month}/${day}/${year}`;
     },
+    async handleMetadataUpload(event: Event): Promise<void> {
+      const target = event.target as HTMLInputElement;
+      const files = target.files;
+      if (!files || files.length === 0) return;
+      return new Promise((resolve, reject) => {
+        const fileReader = new FileReader()
+        fileReader.onload = (e: ProgressEvent<FileReader>) => {
+          const jsonObject = JSON.parse(e.target?.result as string)
+          for (let jsonPhotoIndex = 0; jsonPhotoIndex < jsonObject.photos.length; jsonPhotoIndex++) {
+            for (let currentPhotoIndex = 0; currentPhotoIndex < this.photoData.length; currentPhotoIndex++) {
+              if (this.photoData[currentPhotoIndex].filename == jsonObject.photos[jsonPhotoIndex].filename) {
+                this.photoData[currentPhotoIndex].date = new Date(jsonObject.photos[jsonPhotoIndex].date)
+                this.selectImage(currentPhotoIndex)
+                this.closeImage()
+              }
+            }
+          }
+          resolve()
+        }
+        fileReader.onerror = error => reject(error)
+        fileReader.readAsText(files[0])
+      })
+    },
     async handleFileUpload(event: Event): Promise<void> {
       const target = event.target as HTMLInputElement;
       const files = target.files;
       if (!files || files.length === 0) return;
-      this.photosLoading = true;
 
       const addBorder = (imageFile: File): Promise<photoData | null> => {
         return new Promise((resolve) => {
@@ -122,6 +147,7 @@ export default defineComponent({
             sourceH: 0,
             sourceW: 0,
             scale: 1,
+            filename: imageFile.name,
             date: new Date(imageFile.lastModified),
             isPortrait: false,
           };

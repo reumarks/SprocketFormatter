@@ -3,18 +3,23 @@ import sys
 import json
 from PIL import Image
 from PIL.ExifTags import TAGS
+from datetime import datetime
 
 def get_date_taken(image_path):
-    """Extracts the 'DateTimeOriginal' from an image's EXIF data."""
+    """Extracts the 'DateTimeOriginal' from an image's EXIF data and returns it as a UNIX epoch timestamp."""
     try:
         with Image.open(image_path) as img:
             exif_data = img._getexif()
             if exif_data:
-                # Loop through EXIF tags looking for DateTimeOriginal
                 for tag_id, value in exif_data.items():
                     tag = TAGS.get(tag_id, tag_id)
                     if tag == 'DateTimeOriginal':
-                        return value
+                        # Convert EXIF date format to datetime object and then to UNIX epoch
+                        try:
+                            dt = datetime.strptime(value, "%Y:%m:%d %H:%M:%S")
+                            return int(dt.timestamp())
+                        except Exception as e:
+                            print(f"Error converting date for {image_path}: {e}")
     except Exception as e:
         print(f"Error processing {image_path}: {e}")
     return None
@@ -22,7 +27,6 @@ def get_date_taken(image_path):
 def process_folder(folder_path):
     """Walks through the folder and processes image files."""
     photos = []
-    # Define the image extensions you want to process
     valid_extensions = {'.jpg', '.jpeg', '.png', '.heic'}
     
     for root, dirs, files in os.walk(folder_path):
@@ -52,8 +56,7 @@ def main():
     photos = process_folder(folder_path)
     output = {"photos": photos}
     
-    # Write JSON output to a file
-    output_filename = folder_path + "\_Sprocked_Photo_Data.json"
+    output_filename = folder_path + "/_Sprocked_Photo_Data.json"
     with open(output_filename, "w") as json_file:
         json.dump(output, json_file, indent=4)
     
