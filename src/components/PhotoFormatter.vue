@@ -3,7 +3,8 @@
     <header class="header">
       <h1 class="title">Sprocket Formatter</h1>
       <div class="button-bar">
-        <input type="file" accept="json/*" @change="handleMetadataUpload" class="hidden" id="metadata-input" />
+        <input type="file" accept="application/JSON" @change="handleMetadataUpload" class="hidden"
+          id="metadata-input" />
         <label for="metadata-input" class="button blue-button">Upload Metadata</label>
         <input type="file" accept="image/*" multiple @change="handleFileUpload" class="hidden" id="file-input" />
         <label for="file-input" class="button blue-button">Upload Photos</label>
