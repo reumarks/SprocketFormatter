@@ -3,9 +3,6 @@
     <header class="header">
       <h1 class="title">Sprocket Formatter</h1>
       <div class="button-bar">
-        <input type="file" accept="application/JSON" @change="handleMetadataUpload" class="hidden"
-          id="metadata-input" />
-        <label for="metadata-input" class="button blue-button">Upload Metadata</label>
         <input type="file" accept="image/*" multiple @change="handleFileUpload" class="hidden" id="file-input" />
         <label for="file-input" class="button blue-button">Upload Photos</label>
         <button @click="downloadAll" class="button green-button">Download All</button>
@@ -56,7 +53,7 @@ import IconCheck from './icons/IconCheck.vue';
 import PhotoGrid from './PhotoGrid.vue';
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
-
+import EXIF from 'exif-js';
 
 interface photoData {
   borderedImage: string,
@@ -131,14 +128,21 @@ export default defineComponent({
         fileReader.readAsText(files[0])
       })
     },
+
+    // @ts-expect-error because
+    parseDate(s) {
+      const b = s.split(/\D/);
+      return new Date(b[0], b[1] - 1, b[2], b[3], b[4], b[5]);
+    },
     async handleFileUpload(event: Event): Promise<void> {
       const target = event.target as HTMLInputElement;
       const files = target.files;
       if (!files || files.length === 0) return;
 
-      const addBorder = (imageFile: File): Promise<photoData | null> => {
-        return new Promise((resolve) => {
+      const addBorder = async (imageFile: File): Promise<photoData | null> => {
+        return new Promise(async (resolve) => {
           const reader = new FileReader();
+
           const currentImageData: photoData = {
             borderedImage: '',
             image: new Image(),
@@ -152,6 +156,19 @@ export default defineComponent({
             date: new Date(imageFile.lastModified),
             isPortrait: false,
           };
+
+          const exifDate = await new Promise(resolve =>
+            // @ts-expect-error exif does not have proper type support
+            EXIF.getData(imageFile, function () {
+              // @ts-expect-error exif does not have proper type support
+              resolve(EXIF.getTag(this, "DateTimeOriginal"))
+            }));
+
+          if (exifDate != undefined) {
+            console.log(this.parseDate(exifDate))
+            currentImageData.date = this.parseDate(exifDate)
+          }
+
           reader.onload = (e: ProgressEvent<FileReader>) => {
             currentImageData.image.onload = () => {
               if (!this.canvas) {
