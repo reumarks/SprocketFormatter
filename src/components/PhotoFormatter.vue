@@ -54,6 +54,7 @@ import PhotoGrid from './PhotoGrid.vue';
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
 import EXIF from 'exif-js';
+import { downloadZip } from 'client-zip';
 
 interface photoData {
   borderedImage: string,
@@ -265,14 +266,38 @@ export default defineComponent({
       this.context.font = "70px KleeOne";
       this.context.fillText('...', this.canvas.width - 95, 70);
     },
+    dataURItoBlob(dataURI: string) {
+      // convert base64 to raw binary data held in a string
+      // doesn't handle URLEncoded DataURIs - see SO answer #6850276 for code that does this
+      const byteString = atob(dataURI.split(',')[1]);
 
-    downloadAll(): void {
-      this.photoData.forEach((image, index) => {
-        const link = document.createElement('a');
-        link.href = image.borderedImage;
-        link.download = `bordered-image-${index + 1}.png`;
-        link.click();
-      });
+      // separate out the mime component
+      const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]
+
+      // write the bytes of the string to an ArrayBuffer
+      const ab = new ArrayBuffer(byteString.length);
+
+      // create a view into the buffer
+      const ia = new Uint8Array(ab);
+
+      // set the bytes of the buffer to the correct values
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+
+      // write the ArrayBuffer to a blob, and you're done
+      const blob = new Blob([ab], { type: mimeString });
+      return blob;
+
+    },
+    async downloadAll(): Promise<void> {
+      const boarderedImages = this.photoData.map((image, index) => { return { name: `bordered-image-${index + 1}.png`, lastModified: new Date(), input: this.dataURItoBlob(image.borderedImage) } })
+      const blob = await downloadZip(boarderedImages).blob()
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob)
+      link.download = `SprocketPhotos.zip`
+      link.click()
+      link.remove()
     },
     selectImage(index: number): void {
       if (this.photosLoading === true) return;
