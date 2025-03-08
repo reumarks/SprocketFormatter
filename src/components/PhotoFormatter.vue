@@ -230,7 +230,7 @@ export default defineComponent({
         return;
       }
 
-      const borderSize = 94;
+      const borderSize = 120;
 
       const imageWidth = this.canvas.width - borderSize * 2;
       const imageHeight = this.canvas.height - borderSize * 2;
@@ -259,12 +259,12 @@ export default defineComponent({
       this.context.font = "52px KleeOne";
       this.context.textAlign = "left";
       const name = currentImageData.name == '' ? 'photo_name' : currentImageData.name;
-      this.context.fillText(`${name}.jpeg`, 95, this.canvas.height - 35);
+      this.context.fillText(`${name}.jpeg`, 120, this.canvas.height - 65);
       this.context.font = "49px KleeOne";
       this.context.textAlign = "right";
-      this.context.fillText(`${this.format(currentImageData.date)}`, this.canvas.width - 95, this.canvas.height - 35);
+      this.context.fillText(`${this.format(currentImageData.date)}`, this.canvas.width - 120, this.canvas.height - 65);
       this.context.font = "70px KleeOne";
-      this.context.fillText('...', this.canvas.width - 95, 70);
+      this.context.fillText('...', this.canvas.width - 120, 95);
     },
     dataURItoBlob(dataURI: string) {
       // convert base64 to raw binary data held in a string
